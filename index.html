@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMIS Content Generator - Blog & LinkedIn Post Automation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-shield-alt"></i> RMIS Content Generator</h1>
+                <p>Automated Blog & LinkedIn Post Creation for Risk Management Information Systems</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>Generate Strategic RMIS Content</h2>
+                    <p>Complete the form below to trigger automated content generation based on current industry trends and news.</p>
+                </div>
+
+                <form id="rmisContentForm" class="content-form">
+                    <div class="form-section">
+                        <h3><i class="fas fa-bullseye"></i> Industry Focus</h3>
+                        
+                        <div class="form-group">
+                            <label for="focusArea">Focus Area *</label>
+                            <select id="focusArea" name="focusArea" required>
+                                <option value="">Select Industry Focus...</option>
+                                <option value="Defence">Defence & Security</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Financial">Financial Services</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="General">General RMIS</option>
+                            </select>
+                            <small class="field-hint">Choose the primary industry sector for content focus</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="specificTopic">Specific Topic *</label>
+                            <input type="text" id="specificTopic" name="specificTopic" 
+                                   placeholder="e.g., Latest industry developments and trends" required>
+                            <small class="field-hint">Specific aspect or current event to focus on</small>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-comments"></i> Messaging & Audience</h3>
+                        
+                        <div class="form-group">
+                            <label for="keyMessage">Key Message *</label>
+                            <textarea id="keyMessage" name="keyMessage" rows="3" 
+                                      placeholder="Strategic insights for modern RMIS implementation" required></textarea>
+                            <small class="field-hint">Core message to communicate through the content</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="targetAudience">Target Audience *</label>
+                            <input type="text" id="targetAudience" name="targetAudience" 
+                                   placeholder="Risk Managers, CROs, Industry Leaders" required>
+                            <small class="field-hint">Primary audience for the content</small>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-cogs"></i> Content Configuration</h3>
+                        
+                        <div class="form-group">
+                            <label for="callToAction">Call to Action</label>
+                            <select id="callToAction" name="callToAction">
+                                <option value="webinar">Webinar Registration</option>
+                                <option value="consultation">Consultation Booking</option>
+                                <option value="whitepaper">Whitepaper Download</option>
+                                <option value="contact">Contact Us</option>
+                                <option value="demo">Request Demo</option>
+                            </select>
+                            <small class="field-hint">Desired action for readers to take</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contentType">Content Type</label>
+                            <select id="contentType" name="contentType">
+                                <option value="both">Blog Post + LinkedIn Post</option>
+                                <option value="blog">Blog Post Only</option>
+                                <option value="linkedin">LinkedIn Post Only</option>
+                            </select>
+                            <small class="field-hint">Type of content to generate</small>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-calendar-alt"></i> Additional Context</h3>
+                        
+                        <div class="form-group">
+                            <label for="keyEvents">Key Events/News</label>
+                            <input type="text" id="keyEvents" name="keyEvents" 
+                                   placeholder="e.g., Recent regulatory changes, major industry conference">
+                            <small class="field-hint">Recent events or news that should be referenced</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="additionalNotes">Additional Notes</label>
+                            <textarea id="additionalNotes" name="additionalNotes" rows="3" 
+                                      placeholder="Any specific requirements, tone preferences, or additional context..."></textarea>
+                            <small class="field-hint">Any additional context or special requirements</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="previewBtn">
+                            <i class="fas fa-eye"></i> Preview Request
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-rocket"></i> Generate Content
+                        </button>
+                    </div>
+                </form>
+
+                <div id="previewModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Request Preview</h3>
+                            <button type="button" class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <pre id="previewContent"></pre>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary close-modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="statusContainer" class="status-container" style="display: none;">
+                    <div class="status-content">
+                        <div class="status-icon">
+                            <i class="fas fa-spinner fa-spin" id="loadingIcon"></i>
+                            <i class="fas fa-check-circle" id="successIcon" style="display: none;"></i>
+                            <i class="fas fa-exclamation-triangle" id="errorIcon" style="display: none;"></i>
+                        </div>
+                        <div class="status-message" id="statusMessage">
+                            Processing your request...
+                        </div>
+                        <div class="status-details" id="statusDetails"></div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="sidebar">
+                <div class="info-card">
+                    <h3><i class="fas fa-info-circle"></i> How It Works</h3>
+                    <ol>
+                        <li><strong>Configure:</strong> Set your industry focus and messaging requirements</li>
+                        <li><strong>Analyze:</strong> System fetches latest industry news and trends</li>
+                        <li><strong>Generate:</strong> AI creates strategic content based on your specifications</li>
+                        <li><strong>Deliver:</strong> Professional blog posts and LinkedIn content ready for publication</li>
+                    </ol>
+                </div>
+
+                <div class="info-card">
+                    <h3><i class="fas fa-clock"></i> Processing Time</h3>
+                    <p>Content generation typically takes 2-5 minutes depending on complexity and current news analysis requirements.</p>
+                </div>
+
+                <div class="info-card">
+                    <h3><i class="fas fa-lightbulb"></i> Best Practices</h3>
+                    <ul>
+                        <li>Be specific with your topic focus for better results</li>
+                        <li>Include recent events or trends in the Key Events field</li>
+                        <li>Tailor your key message to your specific audience</li>
+                        <li>Consider seasonal or current industry themes</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3><i class="fas fa-chart-line"></i> Supported Industries</h3>
+                    <div class="industry-tags">
+                        <span class="tag">Defence & Security</span>
+                        <span class="tag">Healthcare</span>
+                        <span class="tag">Financial Services</span>
+                        <span class="tag">Manufacturing</span>
+                        <span class="tag">General RMIS</span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 RMIS Content Generator. Automated strategic content creation for risk management professionals.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

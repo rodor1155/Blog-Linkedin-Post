@@ -1,0 +1,791 @@
+{
+  "name": "Blog & LI Post V2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "81c4e69e-49c9-492b-832c-fe217c3c2c57",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1080,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rmis-content-input",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0afa0b46-0b3d-4406-9d21-61704d11f0c6",
+      "name": "Form Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1080,
+        1160
+      ],
+      "webhookId": "rmis-content-form"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create default form data for weekly trigger\nconst focusAreas = ['Defence', 'Healthcare', 'Financial', 'Manufacturing'];\nconst currentWeek = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));\nconst focusArea = focusAreas[currentWeek % focusAreas.length];\n\nconst defaultData = {\n  focusArea: focusArea,\n  specificTopic: 'Latest industry developments and trends',\n  keyMessage: 'Strategic insights for modern RMIS implementation',\n  targetAudience: 'Risk Managers, CROs, Industry Leaders',\n  callToAction: 'webinar',\n  contentType: 'both'\n};\n\nreturn [{json: defaultData}];"
+      },
+      "id": "18ddefcd-6a60-4f6c-8e48-a21e1a6aab9c",
+      "name": "Default Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "RMIS OR \"risk management information systems\" OR \"risk management software\""
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "from",
+              "value": "={{ DateTime.now().minus({days: 7}).toISODate() }}"
+            },
+            {
+              "name": "pageSize",
+              "value": "20"
+            },
+            {
+              "name": "apiKey",
+              "value": "ec2958d9645748d5942f4fefbb977e92"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "601a7356-b1a9-4db8-a5f7-16296dabed20",
+      "name": "News Collection Weekly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -640,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.focusArea }} RMIS OR \"{{ $json.focusArea }} risk management\" OR \"{{ $json.specificTopic }}\""
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "from",
+              "value": "={{ DateTime.now().minus({days: 7}).toISODate() }}"
+            },
+            {
+              "name": "pageSize",
+              "value": "20"
+            },
+            {
+              "name": "apiKey",
+              "value": "ec2958d9645748d5942f4fefbb977e92"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "id": "6bae5d61-c2e0-40b7-a183-34be359c2a01",
+      "name": "News Collection Form",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -880,
+        1160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconsole.log(\"=== NEWS FILTER DEBUG ===\");\nconsole.log(\"Items received:\", items.length);\n\n// Get the merged data\nconst mergedData = items[0]?.json;\nconsole.log(\"Merged data:\", mergedData);\n\n// Since we have mock/merged data instead of NewsAPI articles array,\n// we'll create articles based on the focus area\nconst focusArea = mergedData?.focusArea || 'General';\nconst specificTopic = mergedData?.specificTopic || 'RMIS trends';\n\nconsole.log(\"Focus area:\", focusArea);\nconsole.log(\"Specific topic:\", specificTopic);\n\n// Create relevant articles based on focus area\nlet articles = [];\n\nif (focusArea === 'Defence' || focusArea === 'Defense') {\n  articles = [\n    {\n      title: \"Defense Budget Constraints Impact RMIS Implementation\",\n      description: \"Recent DoD spending cuts are forcing defense contractors to reconsider their risk management technology investments and prioritize cost-effective solutions.\",\n      publishedAt: \"2024-07-24T10:00:00Z\",\n      url: \"https://example.com/defense-rmis-budget\"\n    },\n    {\n      title: \"Military Contractors Adopt Advanced RMIS for Compliance\",\n      description: \"Defense organizations are implementing comprehensive risk management systems to meet stringent DoD compliance requirements while managing operational risks.\",\n      publishedAt: \"2024-07-23T15:30:00Z\",\n      url: \"https://example.com/military-rmis-compliance\"\n    }\n  ];\n} else if (focusArea === 'Healthcare') {\n  articles = [\n    {\n      title: \"Healthcare RMIS Market Expands Amid Regulatory Changes\",\n      description: \"Healthcare organizations are investing in risk management information systems to handle patient safety, data privacy, and regulatory compliance challenges.\",\n      publishedAt: \"2024-07-24T09:00:00Z\",\n      url: \"https://example.com/healthcare-rmis\"\n    },\n    {\n      title: \"Hospital Risk Management Systems Show ROI Growth\",\n      description: \"Medical institutions report significant returns on RMIS investments through reduced insurance costs and improved patient safety outcomes.\",\n      publishedAt: \"2024-07-22T14:00:00Z\",\n      url: \"https://example.com/hospital-rmis-roi\"\n    }\n  ];\n} else if (focusArea === 'Financial') {\n  articles = [\n    {\n      title: \"Financial Services RMIS Adoption Accelerates\",\n      description: \"Banks and financial institutions are rapidly implementing comprehensive risk management systems to handle regulatory compliance and operational risk.\",\n      publishedAt: \"2024-07-24T11:00:00Z\",\n      url: \"https://example.com/financial-rmis\"\n    },\n    {\n      title: \"RegTech Integration Transforms Banking Risk Management\",\n      description: \"Financial institutions leverage AI-powered RMIS solutions to automate compliance monitoring and risk assessment processes.\",\n      publishedAt: \"2024-07-21T16:00:00Z\",\n      url: \"https://example.com/regtech-banking\"\n    }\n  ];\n} else {\n  // General/default articles\n  articles = [\n    {\n      title: \"RMIS Market Shows Strong Growth Trajectory\",\n      description: \"The global risk management information systems market is projected to reach $1.05 billion by 2030, driven by increasing regulatory requirements and digital transformation.\",\n      publishedAt: \"2024-07-24T12:00:00Z\",\n      url: \"https://example.com/rmis-market-growth\"\n    },\n    {\n      title: \"AI Integration Revolutionizes Risk Management Systems\",\n      description: \"Organizations are incorporating artificial intelligence and machine learning capabilities into their RMIS platforms to enhance predictive analytics and automated decision-making.\",\n      publishedAt: \"2024-07-23T10:00:00Z\",\n      url: \"https://example.com/ai-rmis-revolution\"\n    }\n  ];\n}\n\nconsole.log(\"Generated articles count:\", articles.length);\n\n// Add the focus area and topic to each article for context\nconst enrichedArticles = articles.map(article => ({\n  json: {\n    ...article,\n    focusArea: focusArea,\n    specificTopic: specificTopic,\n    keyMessage: mergedData?.keyMessage || 'Strategic insights',\n    // PRESERVE THE COMPLETE FORM DATA\n    formData: {\n      focusArea: mergedData?.focusArea,\n      specificTopic: mergedData?.specificTopic,\n      keyMessage: mergedData?.keyMessage,\n      targetAudience: mergedData?.targetAudience,\n      callToAction: mergedData?.callToAction,\n      keyEvents: mergedData?.keyEvents,\n      additionalNotes: mergedData?.additionalNotes\n    }\n  }\n}));\n\nconsole.log(\"Returning enriched articles\");\nreturn [enrichedArticles[0]]; // Return only the first article\n"
+      },
+      "id": "f443ad55-5d27-4de2-bb83-e19aa05ec119",
+      "name": "News Filter & Combine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "prompt": "=Analyze these RMIS industry news items focusing on {{ $json.formData?.focusArea || 'general trends' }}:\n\nTitle: {{ $json.title }}\nDescription: {{ $json.description }}\nSpecific Focus: {{ $json.formData?.specificTopic || 'industry developments' }}\n\nBased on this news and the focus area of {{ $json.formData?.focusArea || 'RMIS industry' }}, provide:\n\n1. Key trends affecting {{ $json.formData?.focusArea || 'the industry' }}\n2. Strategic implications for risk managers and CROs\n3. Opportunities for thought leadership content\n4. Potential blog angles and LinkedIn post concepts\n5. Current challenges in {{ $json.formData?.focusArea || 'risk management' }}\n\nProvide a comprehensive strategic analysis in 300 words that will inform content creation.",
+        "options": {
+          "maxTokens": 1200,
+          "temperature": 0.7
+        },
+        "requestOptions": {}
+      },
+      "id": "a5f8b343-09be-4264-89e9-ae83a77bd40f",
+      "name": "Content Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        20,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Based on this strategic analysis:\n{{ $json.choices[0].text }}\n\nAnd the following requirements:\n- Focus Area: {{ $json.formData?.focusArea || 'RMIS Industry' }}\n- Specific Topic: {{ $json.formData?.specificTopic || 'current trends' }}\n- Key Message: {{ $json.formData?.keyMessage || 'strategic RMIS implementation' }}\n- Target Audience: {{ $json.formData?.targetAudience || 'Risk Managers and CROs' }}\n\nCreate a comprehensive content strategy that includes:\n\n1. **Blog Post Strategy:**\n   - Compelling headline\n   - Key talking points (5-6 main points)\n   - Supporting data and statistics\n   - Implementation recommendations\n   - Common pitfalls to address\n\n2. **LinkedIn Post Strategy:**\n   - Hook statement\n   - Problem/solution structure\n   - Key hashtags for {{ $json.formData?.focusArea || 'RMIS' }}\n   - Call-to-action\n\n3. **Content Themes:**\n   - Strategic positioning\n   - Thought leadership angles\n   - Industry authority building\n\nStyle: Professional, authoritative, solution-oriented like Ross Ellner's approach.\nLength: Detailed strategy document for content creation.",
+        "options": {
+          "maxTokens": 2000,
+          "temperature": 0.8
+        },
+        "requestOptions": {}
+      },
+      "id": "9df6cd73-5908-4195-86f2-1d7f57056515",
+      "name": "Content Strategy",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        240,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Using this content strategy:\n{{ $json.choices[0].text }}\n\nWrite a complete professional blog post (1000-1400 words) in Ross Ellner's authoritative style:\n\n**Required Structure:**\n1. **Compelling Question Headline** - Start with a thought-provoking question\n2. **Industry Context** - Current challenges in {{ $json.formData?.focusArea || 'the industry' }}\n3. **Modern RMIS Solution Framework** - What defines effective systems today\n4. **Strategic Implementation Approach** - How to succeed with RMIS\n5. **Common Pitfalls to Avoid** - Specific to {{ $json.formData?.focusArea || 'the industry' }}\n6. **Future Vision** - Where the industry is heading\n7. **Strong Call-to-Action** - Webinar/consultation invitation\n\n**Writing Style:**\n- Professional, strategic, solution-oriented\n- Include industry data and statistics\n- Provide actionable insights\n- Position as thought leadership\n- Use clear, confident language\n- Address {{ $json.formData?.targetAudience || 'Risk Managers and CROs' }} directly\n\n**Author:** Ross Ellner\n**Focus:** {{ $json.formData?.focusArea || 'RMIS' }} industry with emphasis on {{ $json.formData?.specificTopic || 'strategic implementation' }}\n\nCreate compelling, authoritative content that establishes thought leadership.",
+        "options": {
+          "maxTokens": 3000,
+          "temperature": 0.7
+        },
+        "requestOptions": {}
+      },
+      "id": "78a2c2ad-7401-41a3-b336-d40387028c89",
+      "name": "Blog Generator",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        460,
+        460
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Using this content strategy:\n{{ $node['Content Strategy'].json.choices[0].text }}\n\nCreate a compelling LinkedIn post (1400-2000 characters) targeting {{ $json.formData?.targetAudience || 'Risk Managers and CROs' }}:\n\n**Required Format:**\n🎯 [Strong hook about {{ $json.formData?.focusArea || 'RMIS' }} challenge]\n\nTraditional approaches in {{ $json.formData?.focusArea || 'risk management' }} often fall short because:\n→ [Specific problem 1]\n→ [Specific problem 2]\n→ [Specific problem 3]\n\nModern {{ $json.formData?.focusArea || 'RMIS' }} strategies require:\n✅ [Strategic solution 1]\n✅ [Strategic solution 2]\n✅ [Strategic solution 3]\n\n[Include relevant industry statistic or insight]\n\nWhat's your experience with {{ $json.formData?.specificTopic || 'RMIS transformation' }} in {{ $json.formData?.focusArea || 'your industry' }}?\n\n**Hashtags:** #RMIS #RiskManagement #{{ $json.formData?.focusArea || 'Industry' }}Strategy #ChiefRiskOfficer #{{ $json.formData?.focusArea || 'Enterprise' }}Risk #StrategicRisk\n\n[Strong call-to-action: {{ $json.formData?.callToAction || 'Learn more about strategic RMIS implementation' }} →]\n\n**Style:** Professional, engaging, conversation-starting\n**Tone:** Authoritative but approachable\n**Goal:** Drive engagement and position as thought leader",
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.8
+        },
+        "requestOptions": {}
+      },
+      "id": "d98d2776-a8c5-429a-8144-ec8068c31dfa",
+      "name": "LinkedIn Generator",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        460,
+        660
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet debugInfo = {\n  totalItems: items.length,\n  itemStructures: [],\n  searchResults: {},\n  finalData: {}\n};\n\n// Log items to see structure\nfor (let i = 0; i < items.length; i++) {\n  debugInfo.itemStructures.push({\n    itemIndex: i,\n    itemType: items[i]?.json?.articles ? \"NewsAPI Response\" : \"Form Data\",\n    hasArticles: !!items[i]?.json?.articles,\n    hasBody: !!items[i]?.json?.body,\n    fullStructure: items[i]\n  });\n}\n\nlet formData = {};\nlet newsData = {};\n\n// Look for form data in the FIRST item (before NewsAPI overwrites it)\n// The form data should be in items[0] if it exists\nconst firstItem = items[0];\n\n// Check if this is NewsAPI data or form data\nif (firstItem?.json?.articles) {\n  // This is NewsAPI response - form data was lost\n  debugInfo.dataSource = \"NewsAPI only - form data lost\";\n  newsData = firstItem.json;\n} else if (firstItem?.json?.body) {\n  // This has form data\n  formData = firstItem.json.body;\n  debugInfo.dataSource = \"Form data found in body\";\n} else if (firstItem?.json?.focusArea) {\n  // Form data at top level\n  formData = firstItem.json;\n  debugInfo.dataSource = \"Form data found at top level\";\n}\n\n// Set defaults if no form data found\nif (!formData.focusArea || !formData.specificTopic) {\n  formData = {\n    focusArea: 'General',\n    specificTopic: 'RMIS industry trends',\n    keyMessage: 'Strategic risk management insights',\n    targetAudience: 'Risk Managers and CROs',\n    callToAction: 'webinar',\n    keyEvents: '',\n    additionalNotes: ''\n  };\n  debugInfo.dataSource += \" - using defaults\";\n}\n\ndebugInfo.searchResults = {\n  formDataFound: !!formData.focusArea,\n  newsDataFound: !!newsData.articles\n};\n\ndebugInfo.finalData = formData;\n\n// Return merged data\nreturn [{\n  json: {\n    ...formData,\n    newsTitle: 'RMIS Market Growth Continues',\n    newsDescription: 'Risk management information systems market shows steady expansion',\n    mergedAt: new Date().toISOString(),\n    DEBUG_INFO: debugInfo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        560
+      ],
+      "id": "2728f9ee-5d1a-4d90-bb38-6a7c4911edc6",
+      "name": "Code Node to Merge"
+    },
+    {
+      "parameters": {
+        "fromEmail": "ross@ellner.co.uk",
+        "toEmail": "ross.ellner@archerirm.com",
+        "subject": "=LinkedIn Post Suggestion - {{ $now.format('MMM DD') }}\n",
+        "html": "=<p><strong>Focus Area:</strong> {{ $('Default Data').first().json.focusArea || 'General' }}</p>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        660
+      ],
+      "id": "01c85f75-130c-470b-bc56-4430198d0c0d",
+      "name": "Send LinkedIn email",
+      "webhookId": "6f96ec9c-a60d-4de6-ab49-92b5d31275c9",
+      "credentials": {
+        "smtp": {
+          "id": "I4XB5SDOQNbXJ9xY",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "ross@ellner.co.uk",
+        "toEmail": "ross.ellner@archerirm.com",
+        "subject": "=Blog Suggestion - {{ $now.format('MMM DD') }}\n",
+        "html": "=<p><strong>Focus Area:</strong> {{ $('Default Data').first().json.focusArea || 'General' }}</p>\n<p><strong>Topic:</strong> {{ $('Default Data').first().json.specificTopic || 'RMIS Trends' }}</p>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        460
+      ],
+      "id": "a91b3066-22b9-41f5-985d-5c6d10adf2d0",
+      "name": "Send blog email",
+      "webhookId": "352aa3e0-e51b-42ac-9577-c3963036149f",
+      "credentials": {
+        "smtp": {
+          "id": "I4XB5SDOQNbXJ9xY",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconsole.log(\"=== NEWS FILTER DEBUG ===\");\nconsole.log(\"Items received:\", items.length);\n\n// Get the merged data\nconst mergedData = items[0]?.json;\nconsole.log(\"FULL mergedData structure:\", JSON.stringify(mergedData, null, 2));\n\n// Extract form data correctly\nconst focusArea = mergedData?.focusArea || 'General';\nconst specificTopic = mergedData?.specificTopic || 'RMIS trends';\n\nconsole.log(\"Extracted focusArea:\", focusArea);\nconsole.log(\"Extracted specificTopic:\", specificTopic);\nconsole.log(\"Extracted keyMessage:\", mergedData?.keyMessage);\nconsole.log(\"Extracted keyEvents:\", mergedData?.keyEvents);\n\n// Create relevant articles based on focus area\nlet articles = [{\n  title: `${focusArea} RMIS Market: ${specificTopic} Summit Impact`,\n  description: `Risk management information systems in ${focusArea} sector focusing on ${specificTopic} developments and ${mergedData?.keyEvents || 'industry'} context.`,\n  publishedAt: \"2024-07-24T12:00:00Z\",\n  url: \"https://example.com/rmis-market-growth\"\n}];\n\n// THE CRITICAL FIX: Create the formData structure exactly as expected\nconst formDataObject = {\n  focusArea: mergedData?.focusArea,\n  specificTopic: mergedData?.specificTopic,\n  keyMessage: mergedData?.keyMessage,\n  targetAudience: mergedData?.targetAudience,\n  callToAction: mergedData?.callToAction,\n  keyEvents: mergedData?.keyEvents,\n  additionalNotes: mergedData?.additionalNotes\n};\n\nconsole.log(\"Created formData object:\", JSON.stringify(formDataObject, null, 2));\n\n// Return enriched article with form data\nconst enrichedArticle = {\n  json: {\n    ...articles[0],\n    focusArea: focusArea,\n    specificTopic: specificTopic,\n    keyMessage: mergedData?.keyMessage || 'Strategic insights',\n    formData: formDataObject,\n    // ALSO ADD DEBUG INFO\n    DEBUG_FORMDATA: formDataObject,\n    DEBUG_MERGED: mergedData\n  }\n};\n\nconsole.log(\"Final return object:\", JSON.stringify(enrichedArticle, null, 2));\nreturn [enrichedArticle];\n"
+      },
+      "id": "e45325df-ddb7-4458-adeb-6a2a27dd1535",
+      "name": "News Filter & Combine1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        1160
+      ]
+    },
+    {
+      "parameters": {
+        "prompt": "==Analyze this Defence RMIS news focusing on Alaska developments:\n\nTitle: {{ $json.title }}\nDescription: {{ $json.description }}\nFocus: {{ $json.focusArea }} ({{ $json.specificTopic }})\nKey Events: {{ $json.keyEvents }}\n\nProvide analysis for Defence risk management content creation covering:\n1. Alaska summit implications for RMIS\n2. Ukraine conflict impact on Defence risk\n3. EU RMIS strategic considerations\n4. Key trends for {{ $json.targetAudience }}\n\nKeep response under 200 words for downstream processing.",
+        "options": {
+          "maxTokens": 3000,
+          "temperature": 0.7
+        },
+        "requestOptions": {}
+      },
+      "id": "3cb41a54-802c-4ea0-862b-d50ff67d27f8",
+      "name": "Content Analysis1",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        1160
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "==Create a content strategy for {{ $json.focusArea }} RMIS focusing on {{ $json.specificTopic }} summit and {{ $json.keyEvents }} impact:\n\n**Analysis Input:**\n{{ $json.choices[0].text }}\n\n**Required Context to Preserve:**\n- Industry Focus: {{ $json.focusArea }}  \n- Specific Event: {{ $json.specificTopic }} summit\n- Geopolitical Context: {{ $json.keyEvents }} conflict\n- Key Message: {{ $json.keyMessage }}\n- Target Audience: {{ $json.targetAudience }}\n\n**Blog Strategy:**\nCreate strategy for {{ $json.focusArea }} sector blog post about:\n- How {{ $json.specificTopic }} summit will impact Defence RMIS\n- {{ $json.keyEvents }} conflict implications for risk management\n- {{ $json.keyMessage }} strategic positioning\n- Targeting {{ $json.targetAudience }}\n\n**LinkedIn Strategy:**  \nCreate strategy for LinkedIn post about:\n- {{ $json.focusArea }} RMIS challenges from {{ $json.specificTopic }} developments\n- {{ $json.keyEvents }} geopolitical risk factors\n- {{ $json.keyMessage }} thought leadership angle\n- Engaging {{ $json.targetAudience }}\n\n**Output Requirements:**\nEnsure all strategy recommendations specifically reference:\n1. {{ $json.focusArea }} sector context\n2. {{ $json.specificTopic }} summit implications  \n3. {{ $json.keyEvents }} conflict considerations\n4. {{ $json.keyMessage }} strategic messaging\n\nStyle: Strategic, specific to Defence industry, Alaska summit focused.",
+        "options": {
+          "maxTokens": 3000,
+          "temperature": 0.8
+        },
+        "requestOptions": {}
+      },
+      "id": "875a41e5-f61c-42b5-bd47-3afd5fef2fc7",
+      "name": "Content Strategy1",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        20,
+        1160
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Using this content strategy:\n{{ $json.choices[0].text }}\n\nWrite a complete professional blog post (1000-1400 words) in Ross Ellner's authoritative style:\n\n**Required Structure:**\n1. **Compelling Question Headline** - Start with a thought-provoking question\n2. **Industry Context** - Current challenges in {{ $json.formData?.focusArea || 'the industry' }}\n3. **Modern RMIS Solution Framework** - What defines effective systems today\n4. **Strategic Implementation Approach** - How to succeed with RMIS\n5. **Common Pitfalls to Avoid** - Specific to {{ $json.formData?.focusArea || 'the industry' }}\n6. **Future Vision** - Where the industry is heading\n7. **Strong Call-to-Action** - Webinar/consultation invitation\n\n**Writing Style:**\n- Professional, strategic, solution-oriented\n- Include industry data and statistics\n- Provide actionable insights\n- Position as thought leadership\n- Use clear, confident language\n- Address {{ $json.formData?.targetAudience || 'Risk Managers and CROs' }} directly\n\n**Author:** Ross Ellner\n**Focus:** {{ $json.formData?.focusArea || 'RMIS' }} industry with emphasis on {{ $json.formData?.specificTopic || 'strategic implementation' }}\n\nCreate compelling, authoritative content that establishes thought leadership.",
+        "options": {
+          "maxTokens": 3000,
+          "temperature": 0.7
+        },
+        "requestOptions": {}
+      },
+      "id": "5674be84-4974-410d-92a9-43d4b6b66a9a",
+      "name": "Blog Generator1",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        240,
+        1060
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Using this content strategy:\n{{ $node['Content Strategy1'].json.choices[0].text }}\n\nCreate a compelling LinkedIn post (1400-2000 characters) targeting {{ $json.formData?.targetAudience || 'Risk Managers and CROs' }}:\n\n**Required Format:**\n🎯 [Strong hook about {{ $json.formData?.focusArea || 'RMIS' }} challenge]\n\nTraditional approaches in {{ $json.formData?.focusArea || 'risk management' }} often fall short because:\n→ [Specific problem 1]\n→ [Specific problem 2]\n→ [Specific problem 3]\n\nModern {{ $json.formData?.focusArea || 'RMIS' }} strategies require:\n✅ [Strategic solution 1]\n✅ [Strategic solution 2]\n✅ [Strategic solution 3]\n\n[Include relevant industry statistic or insight]\n\nWhat's your experience with {{ $json.formData?.specificTopic || 'RMIS transformation' }} in {{ $json.formData?.focusArea || 'your industry' }}?\n\n**Hashtags:** #RMIS #RiskManagement #{{ $json.formData?.focusArea || 'Industry' }}Strategy #ChiefRiskOfficer #{{ $json.formData?.focusArea || 'Enterprise' }}Risk #StrategicRisk\n\n[Strong call-to-action: {{ $json.formData?.callToAction || 'Learn more about strategic RMIS implementation' }} →]\n\n**Style:** Professional, engaging, conversation-starting\n**Tone:** Authoritative but approachable\n**Goal:** Drive engagement and position as thought leader",
+        "options": {
+          "maxTokens": 3000,
+          "temperature": 0.8
+        },
+        "requestOptions": {}
+      },
+      "id": "6d31aaae-ba62-4261-b1e9-bff2ac8267a6",
+      "name": "LinkedIn Generator1",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        240,
+        1260
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "srbtOjjF011MKXwu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet debugInfo = {\n  totalItems: items.length,\n  itemStructures: [],\n  searchResults: {},\n  finalData: {}\n};\n\n// Log items to see structure\nfor (let i = 0; i < items.length; i++) {\n  debugInfo.itemStructures.push({\n    itemIndex: i,\n    itemType: items[i]?.json?.articles ? \"NewsAPI Response\" : \"Form Data\",\n    hasArticles: !!items[i]?.json?.articles,\n    hasBody: !!items[i]?.json?.body,\n    fullStructure: items[i]\n  });\n}\n\nlet formData = {};\nlet newsData = {};\n\n// Look for form data in the FIRST item (before NewsAPI overwrites it)\n// The form data should be in items[0] if it exists\nconst firstItem = items[0];\n\n// Check if this is NewsAPI data or form data\nif (firstItem?.json?.articles) {\n  // This is NewsAPI response - form data was lost\n  debugInfo.dataSource = \"NewsAPI only - form data lost\";\n  newsData = firstItem.json;\n} else if (firstItem?.json?.body) {\n  // This has form data\n  formData = firstItem.json.body;\n  debugInfo.dataSource = \"Form data found in body\";\n} else if (firstItem?.json?.focusArea) {\n  // Form data at top level\n  formData = firstItem.json;\n  debugInfo.dataSource = \"Form data found at top level\";\n}\n\n// Set defaults if no form data found\nif (!formData.focusArea || !formData.specificTopic) {\n  formData = {\n    focusArea: 'General',\n    specificTopic: 'RMIS industry trends',\n    keyMessage: 'Strategic risk management insights',\n    targetAudience: 'Risk Managers and CROs',\n    callToAction: 'webinar',\n    keyEvents: '',\n    additionalNotes: ''\n  };\n  debugInfo.dataSource += \" - using defaults\";\n}\n\ndebugInfo.searchResults = {\n  formDataFound: !!formData.focusArea,\n  newsDataFound: !!newsData.articles\n};\n\ndebugInfo.finalData = formData;\n\n// Return merged data\nreturn [{\n  json: {\n    ...formData,\n    newsTitle: 'RMIS Market Growth Continues',\n    newsDescription: 'Risk management information systems market shows steady expansion',\n    mergedAt: new Date().toISOString(),\n    DEBUG_INFO: debugInfo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        1160
+      ],
+      "id": "8d0bd2a8-14eb-4d97-a3bc-e327570a125a",
+      "name": "Code Node to Merge1"
+    },
+    {
+      "parameters": {
+        "fromEmail": "ross@ellner.co.uk",
+        "toEmail": "ross.ellner@archerirm.com",
+        "subject": "=Weekly LinkedIn Suggestion - {{ $('Form Input').first().json.focusArea }}\n",
+        "html": "=<h2>RMIS LinkedIn Post Generated</h2>\n<p><strong>Focus Area:</strong> {{ $('Form Input').first().json.focusArea || 'General' }}</p>\n<p><strong>Character Count:</strong> {{ $json.text ? $json.text.length : ($json[0].text ? $json[0].text.length : 0) }}</p>\n<hr>\n<div style=\"background: #f5f5f5; padding: 15px; border-radius: 5px;\">\n{{ ($json.text || $json[0].text || 'Content not found').replace(/\\n/g, '<br>') }}\n</div>\n<hr>\n<p><em>Generated: {{ $now }}</em></p>\n<p><strong>Ready to post on LinkedIn!</strong></p>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        460,
+        1260
+      ],
+      "id": "e6d1f4a9-9151-4f9c-9d09-d2169f52544c",
+      "name": "Send LinkedIn email1",
+      "webhookId": "6f96ec9c-a60d-4de6-ab49-92b5d31275c9",
+      "credentials": {
+        "smtp": {
+          "id": "I4XB5SDOQNbXJ9xY",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "ross@ellner.co.uk",
+        "toEmail": "ross.ellner@archerirm.com",
+        "subject": "=Blog Suggestion - {{ $('Form Input').first().json.focusArea }}\n",
+        "html": "=<h2>RMIS Blog Post Generated</h2>\n<p><strong>Focus Area:</strong> {{ $('Form Input').first().json.focusArea || 'General' }}</p>\n<p><strong>Topic:</strong> {{ $('Form Input').first().json.specificTopic || 'RMIS Trends' }}</p>\n<p><strong>Word Count:</strong> {{ $json.text ? $json.text.split(' ').length : ($json[0].text ? $json[0].text.split(' ').length : 'Unknown') }}</p>\n<hr>\n<div>\n{{ ($json.text || $json[0].text || 'Content not found').replace(/\\n/g, '<br>') }}\n</div>\n<hr>\n<p><em>Generated: {{ $now }}</em></p>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        460,
+        1060
+      ],
+      "id": "487d2192-7fff-45a3-87b9-d2b13476d608",
+      "name": "Send blog email1",
+      "webhookId": "352aa3e0-e51b-42ac-9577-c3963036149f",
+      "credentials": {
+        "smtp": {
+          "id": "I4XB5SDOQNbXJ9xY",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Form Entry \n",
+        "height": 520,
+        "width": 1940,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1260,
+        940
+      ],
+      "typeVersion": 1,
+      "id": "c0960e6d-cfcc-47ba-915f-dae31ab16a43",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Schedule Entry \n",
+        "height": 520,
+        "width": 2180
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1260,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "3616b6a5-7052-4d0a-8426-7d2a9bbe5b09",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This node just passes through the form data without making any API calls\nconst items = $input.all();\n\nconsole.log(\"=== FORM DATA PASS THROUGH ===\");\nconsole.log(\"Received items:\", items.length);\n\n// Just pass through the form data as-is\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        1000
+      ],
+      "id": "1ba65243-3666-4f37-b899-cc581158f176",
+      "name": "Passthrough Node"
+    }
+  ],
+  "pinData": {
+    "Form Input": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv908146.hstgr.cloud",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            "content-length": "229",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "content-type": "application/json",
+            "origin": "https://www.genspark.ai",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Brave\";v=\"138\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "sec-gpc": "1",
+            "x-forwarded-for": "86.26.233.56",
+            "x-forwarded-host": "n8n.srv908146.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "7643dea5ff49",
+            "x-real-ip": "86.26.233.56"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "focusArea": "Energy",
+            "specificTopic": "Cyber",
+            "keyEvents": "War in ukraine",
+            "keyMessage": "Sell",
+            "targetAudience": "Risk Managers",
+            "callToAction": "Webinar Registration",
+            "contentType": [
+              "blog",
+              "linkedin",
+              "image"
+            ],
+            "additionalNotes": ""
+          },
+          "webhookUrl": "https://n8n.srv908146.hstgr.cloud/webhook/rmis-content-input",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Weekly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Default Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data": {
+      "main": [
+        [
+          {
+            "node": "News Collection Weekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form Input": {
+      "main": [
+        [
+          {
+            "node": "Passthrough Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Collection Weekly": {
+      "main": [
+        [
+          {
+            "node": "Code Node to Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Collection Form": {
+      "main": [
+        []
+      ]
+    },
+    "News Filter & Combine": {
+      "main": [
+        [
+          {
+            "node": "Content Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Analysis": {
+      "main": [
+        [
+          {
+            "node": "Content Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Blog Generator",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "LinkedIn Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog Generator": {
+      "main": [
+        [
+          {
+            "node": "Send blog email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Generator": {
+      "main": [
+        [
+          {
+            "node": "Send LinkedIn email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Node to Merge": {
+      "main": [
+        [
+          {
+            "node": "News Filter & Combine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send blog email": {
+      "main": [
+        []
+      ]
+    },
+    "News Filter & Combine1": {
+      "main": [
+        [
+          {
+            "node": "Content Analysis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Analysis1": {
+      "main": [
+        [
+          {
+            "node": "Content Strategy1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Strategy1": {
+      "main": [
+        [
+          {
+            "node": "Blog Generator1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "LinkedIn Generator1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog Generator1": {
+      "main": [
+        [
+          {
+            "node": "Send blog email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Generator1": {
+      "main": [
+        [
+          {
+            "node": "Send LinkedIn email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Node to Merge1": {
+      "main": [
+        [
+          {
+            "node": "News Filter & Combine1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passthrough Node": {
+      "main": [
+        [
+          {
+            "node": "Code Node to Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0f06825d-e849-4cf3-858d-034f59986848",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "617e6558b78f037fc6aa58ea3cbdd505bef0bf3169738fc16fb3f4c54565f31e"
+  },
+  "id": "QxuAm26mZ6QqXmtN",
+  "tags": []
+}

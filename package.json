@@ -1,0 +1,54 @@
+{
+  "name": "rmis-content-generator",
+  "version": "1.0.0",
+  "description": "Automated Blog & LinkedIn Post Creation for Risk Management Information Systems - Web interface for N8N workflow integration",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 3000 -o",
+    "dev": "npx live-server --port=3000 --open=/",
+    "build": "echo 'Static site - no build required'",
+    "test": "echo 'No tests specified yet'",
+    "deploy": "echo 'Deploy to your preferred hosting service'",
+    "validate": "npx html-validate index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/rmis-content-generator.git"
+  },
+  "keywords": [
+    "rmis",
+    "risk-management",
+    "content-generation",
+    "blog-automation",
+    "linkedin-posts",
+    "n8n-workflow",
+    "ai-content",
+    "defence",
+    "healthcare",
+    "financial-services",
+    "manufacturing"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/rmis-content-generator/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/rmis-content-generator#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2",
+    "html-validate": "^8.7.4"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "config": {
+    "n8n_webhook_path": "/rmis-content-input",
+    "default_port": 3000
+  }
+}
