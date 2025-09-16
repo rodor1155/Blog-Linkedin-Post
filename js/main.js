@@ -8,11 +8,15 @@ class RMISContentGenerator {
         this.form = document.getElementById('rmisContentForm');
         this.previewBtn = document.getElementById('previewBtn');
         this.submitBtn = document.getElementById('submitBtn');
+        this.corsTestBtn = document.getElementById('corsTestBtn');
         this.previewModal = document.getElementById('previewModal');
         this.statusContainer = document.getElementById('statusContainer');
         
         // Webhook endpoint from N8N workflow
-        this.webhookUrl = '/rmis-content-input';
+        this.webhookUrl = 'https://n8n.srv908146.hstgr.cloud/webhook/rmis-content-input';
+        
+        // Test mode - disabled now that we have the correct webhook URL
+        this.testMode = false;
         
         // Initialize the application
         this.init();
@@ -29,6 +33,9 @@ class RMISContentGenerator {
         
         // Preview functionality
         this.previewBtn.addEventListener('click', () => this.showPreview());
+        
+        // CORS test functionality
+        this.corsTestBtn.addEventListener('click', () => this.testCorsConnection());
         
         // Modal controls
         document.querySelectorAll('.close-modal').forEach(btn => {
@@ -213,6 +220,41 @@ class RMISContentGenerator {
         this.previewModal.style.display = 'block';
     }
 
+    async testCorsConnection() {
+        this.showStatus('loading', 'Testing connection to N8N webhook...', 'Checking if CORS is properly configured.');
+        
+        try {
+            // Try a simple GET request first (should get 404 but tell us about CORS)
+            const testResponse = await fetch(this.webhookUrl, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit'
+            });
+            
+            console.log('CORS Test Response:', testResponse.status, testResponse.statusText);
+            
+            if (testResponse.status === 404) {
+                this.showStatus('success', 'Connection Successful!', 
+                    'CORS is working correctly. The webhook is accessible and responding. You can now submit the form.');
+            } else {
+                this.showStatus('success', 'Connection Successful!', 
+                    `Webhook responded with status ${testResponse.status}. CORS appears to be working.`);
+            }
+            
+        } catch (error) {
+            console.error('CORS Test Failed:', error);
+            
+            if (error.message.includes('CORS') || error.message.includes('cross-origin') || 
+                error.name === 'TypeError') {
+                this.showStatus('error', 'CORS Configuration Required', 
+                    `Your N8N instance is blocking requests from this domain (${window.location.origin}). Please configure CORS in your N8N settings to allow this domain.`);
+            } else {
+                this.showStatus('error', 'Connection Test Failed', 
+                    `Could not connect to webhook. Error: ${error.message}`);
+            }
+        }
+    }
+
     closeModal() {
         this.previewModal.style.display = 'none';
     }
@@ -231,24 +273,53 @@ class RMISContentGenerator {
             this.setFormState('submitting');
             this.showStatus('loading', 'Submitting your request...', 'Processing form data and initiating content generation workflow.');
 
-            const response = await this.submitToWebhook(formData);
-            
-            if (response.ok) {
-                const result = await response.json();
-                this.showStatus('success', 'Content generation started successfully!', 
-                    'Your request has been submitted to the N8N workflow. Content generation typically takes 2-5 minutes. You will receive the generated content via email or through your configured notification system.');
+            if (this.testMode) {
+                // Simulate successful submission for testing
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
                 
-                // Reset form after successful submission
+                this.showStatus('success', 'Content generation started successfully! (TEST MODE)', 
+                    'TEST MODE: This is a simulated success. In production, your request would be submitted to the N8N workflow. Content generation typically takes 2-5 minutes.');
+                
+                console.log('TEST MODE - Form data that would be submitted:', formData);
+                
+                // Reset form after successful simulation
                 setTimeout(() => {
                     this.resetForm();
                 }, 3000);
             } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                // Real webhook submission
+                const response = await this.submitToWebhook(formData);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    this.showStatus('success', 'Content generation started successfully!', 
+                        'Your request has been submitted to the N8N workflow. Content generation typically takes 2-5 minutes. You will receive the generated content via email or through your configured notification system.');
+                    
+                    // Reset form after successful submission
+                    setTimeout(() => {
+                        this.resetForm();
+                    }, 3000);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
             }
         } catch (error) {
             console.error('Submission error:', error);
-            this.showStatus('error', 'Submission failed', 
-                `Error: ${error.message}. Please check your network connection and try again. If the problem persists, contact your system administrator.`);
+            
+            let errorMessage = 'Submission failed';
+            let errorDetails = '';
+            
+            if (error.name === 'CORSError') {
+                errorMessage = 'CORS Configuration Required';
+                errorDetails = `Your N8N instance needs to allow requests from this domain (${window.location.origin}). Please add this domain to your N8N CORS settings, or contact your system administrator.`;
+            } else if (error.message.includes('405')) {
+                errorMessage = 'Method Not Allowed (405)';
+                errorDetails = `The webhook might not be configured correctly for POST requests. Please check your N8N webhook configuration.`;
+            } else {
+                errorDetails = `Error: ${error.message}. Please check your webhook URL configuration. Current URL: ${this.webhookUrl}`;
+            }
+            
+            this.showStatus('error', errorMessage, errorDetails);
         } finally {
             this.setFormState('normal');
         }
@@ -259,22 +330,59 @@ class RMISContentGenerator {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            mode: 'cors', // Explicitly request CORS
+            credentials: 'omit' // Don't send credentials
         };
 
-        // Try the configured webhook URL first
+        // Log detailed debugging information
+        console.log('=== WEBHOOK SUBMISSION DEBUG ===');
+        console.log('Current page URL:', window.location.href);
+        console.log('Webhook URL:', this.webhookUrl);
+        console.log('Request payload:', JSON.stringify(data, null, 2));
+        console.log('Request options:', requestOptions);
+
         try {
-            return await fetch(this.webhookUrl, requestOptions);
+            console.log('Making fetch request...');
+            const response = await fetch(this.webhookUrl, requestOptions);
+            
+            console.log('Response received:');
+            console.log('- Status:', response.status);
+            console.log('- Status Text:', response.statusText);
+            console.log('- Headers:', Object.fromEntries(response.headers.entries()));
+            console.log('- Type:', response.type);
+            console.log('- URL:', response.url);
+            
+            // Try to get response text for debugging
+            try {
+                const responseText = await response.clone().text();
+                console.log('- Response body:', responseText);
+            } catch (e) {
+                console.log('- Could not read response body:', e.message);
+            }
+            
+            return response;
+            
         } catch (error) {
-            // If relative URL fails, try absolute URL (fallback for development)
-            console.warn('Relative webhook URL failed, trying absolute URL...');
+            console.error('=== FETCH ERROR ===');
+            console.error('Error type:', error.constructor.name);
+            console.error('Error message:', error.message);
+            console.error('Full error:', error);
             
-            // Extract base URL and construct full webhook URL
-            const baseUrl = window.location.origin;
-            const fullWebhookUrl = `${baseUrl}${this.webhookUrl}`;
+            // Check if it's a CORS error
+            if (error.message.includes('CORS') || error.message.includes('cross-origin') || 
+                error.message.includes('network') || error.name === 'TypeError') {
+                console.error('🚨 LIKELY CORS ISSUE - N8N instance is blocking cross-origin requests');
+                
+                // Provide helpful error message
+                const corsError = new Error(`CORS Error: Your N8N instance (${this.webhookUrl}) is blocking requests from this domain (${window.location.origin}). Please configure CORS in your N8N settings.`);
+                corsError.name = 'CORSError';
+                throw corsError;
+            }
             
-            return await fetch(fullWebhookUrl, requestOptions);
+            throw error;
         }
     }
 
